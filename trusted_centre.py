@@ -4,7 +4,6 @@ import pickle
 import sys
 import random
 import socket
-import threading
 
 class ffs_trusted_center:
     def __init__(self):
@@ -23,8 +22,6 @@ class ffs_trusted_center:
             conn.flush()
 
 
-
-
     def listen(self, port): 
         self.sersock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.sersock.bind(('127.0.0.1',port))
@@ -34,16 +31,23 @@ class ffs_trusted_center:
         while True:
             self.on_new_client(self.sersock)
 
-        self.sersock.close()
-                        
-            
+        self.sersock.close()          
 
 
     def genPrime(self):
-        while True:
-            n = random.randint(3000, 10000)
-            if isPrime(n):
-                self.n = n
-                break
-    
+        p = self.getPrime()
+        q = self.getPrime()
 
+        # ensure that p != q, which is true in most cases
+        while p == q:
+            q = self.getPrime()
+        
+        self.n = p*q
+    
+    """Generate Blum integer primes between 3000 and 10000"""
+    def getPrime(self):
+        while True:
+            p = random.randint(3000, 10000)
+            if isPrime(p) and p%4 == 3:
+                break
+        return p
