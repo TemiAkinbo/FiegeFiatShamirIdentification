@@ -1,14 +1,9 @@
-'''
-Created on Dec 17, 2014
-
-@author: marcel
-'''
-
 import random
 import socket
 import pickle
 from Crypto.Util.number import GCD, inverse
 from mod_operations import coin_flip
+import time
 
 def str_to_bool(string):
     if string=='True':
@@ -31,13 +26,22 @@ class ffs_prover:
         self.p=[None]*k
     
     def genKeys(self):
+        start = time.time()
         for i in range(0,self.k):
-            self.s[i] = random.randint(0,self.n-1)                
+            while True:
+                self.s[i] = random.randint(0,self.n-1)
+                #ensure that secret keys are coprime with n
+                if GCD(self.s[i], self.n) == 1:
+                    break
+            
             self.p[i]= inverse(pow(self.s[i],2,self.n),self.n)
             self.p[i]=self.p[i] % self.n
+        end = time.time()
+        self.keygenTime = end - start
         print("Prover initialized...")
         print("\tPrivate key: "+",".join(map(str,self.s)))
         print("\tPublic key: "+",".join(map(str,self.p)))
+        print(f"Time taken to generate keys {self.keygenTime}")
 
 
     def getModulus(self, port):
@@ -112,22 +116,16 @@ class ffs_prover:
         mysocket.flush()
         
     def run(self,port):
+        start = time.time()
         verifiersocket=self.register_verifier("localhost",port)
         self.advertise_key(verifiersocket)
         self.start_auth(verifiersocket)
         for i in range(0,self.t):
             r,b = self.initiate_challenge(verifiersocket)
             self.challenge_response(r, b, verifiersocket)
+        end = time.time()
+        proverRuntime = end - start
+        print(f"prover protocol runtime: {proverRuntime}")
+        print(f"total runtime: {self.keygenTime + proverRuntime}")
         verifiersocket.write("DIE\n")
         verifiersocket.flush()
-
-
-# class dishonest_ffs_prover(ffs_prover):
-#     def __init__(self,k):
-#         ffs_prover.__init__(self, k) 
-#         self.n=n
-#         self.k=k
-        
-#     def challenge_response(self,r,b,mysocket):
-#         mysocket.write(str(random.randint(0,self.n-1))+"\n")
-#         mysocket.flush()

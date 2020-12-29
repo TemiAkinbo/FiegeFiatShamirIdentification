@@ -1,11 +1,7 @@
-'''
-Created on Dec 18, 2014
-
-@author: marcel
-'''
 import socket
 import random
 from mod_operations import square_ZnZ
+import time
 
 class ffs_verifier:
     def __init__(self,k,t):
@@ -26,6 +22,14 @@ class ffs_verifier:
         sock.close
         print("n received: " + str(self.n))
 
+    def stopTC(self, port):
+        mysocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        mysocket.connect(('localhost',port))
+        sock= mysocket.makefile(mode='rw')
+        sock.write("STOP\n")
+        sock.flush()
+        sock.close
+
 
 
     def listen(self,port):
@@ -34,6 +38,7 @@ class ffs_verifier:
         self.sersock.listen(1)
         conn = self.sersock.accept()[0].makefile(mode='rw')
         
+        start = time.time()
         while True:
             data=conn.readline()
             if data=="PKA\n":
@@ -56,6 +61,9 @@ class ffs_verifier:
             elif data=="DIE\n":
                 conn.close()
                 break
+        
+        end = time.time()
+        print(f"verifier runtime: {end - start}")
         
     def handle_advertisment(self,sock):
         pub_key_as_string=sock.readline()
@@ -81,3 +89,4 @@ class ffs_verifier:
             print("Challenge correctly completed!\n")
         else:
             print("Failure in challenge")
+        
